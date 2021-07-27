@@ -1,3 +1,3 @@
-nim c -r -d:ssl --outdir:build src/hagrid_nim.nim 
+nim c -d:ssl --outdir:build --run src/hagrid_nim.nim devVersion
 # Debug:
-#nim c -r -d:ssl -d:dimscordDebug --outdir:build src/hagrid_nim.nim 
+#nim c -d:ssl -d:dimscordDebug --outdir:build --run src/hagrid_nim.nim devVersion

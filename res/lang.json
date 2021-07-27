@@ -15,7 +15,7 @@
     "es": "Ya tienes un canal para hacer tu pregunta."
   },
   "afterTicketMention": {
-    "fr": "<a:gif_annonce:707259263646695504> | <@(uid)>"
+    "fr": "<a:gif_annonce:707259263646695504> | <@{{uid}}>"
   },
   "welcomeMessage": {
     "fr": "<a:Tada:786907164525592587> **| Bienvenue sur le serveur {{mention}} ! Je te laisse lire le <#698554156679692389> et <#738478512045817896>. Nous sommes désormais {{count}} !**",
@@ -24,5 +24,30 @@
   },
   "byeMessage": {
     "fr": "\uD83D\uDE26 **| {{username}} vient de partir du serveur.**"
+  },
+  "unknownCommand": {
+    "fr": "❌ La commande `{{cmd}}` n'existe pas.",
+    "en": "❌ Command `{{cmd}}` does not exist.",
+    "es": "❌ El comando `{{cmd}}` no existe."
+  },
+  "enServiceNotAllowed": {
+    "fr": "❌ Ce rôle est réservé à certains membres du staff.",
+    "en": "❌ This role is reserved for certain staff members.",
+    "es": "❌ Este rol está reservado para ciertos miembros del personal."
+  },
+  "errorOccured": {
+    "fr": "❌ Une erreur est survenue.",
+    "en": "❌ An error occured.",
+    "es": "❌ Se ha producido un error."
+  },
+  "enServiceGave": {
+    "fr": "✅ Vous êtes maintenant `en service`.",
+    "en": "✅ You are now `on duty`.",
+    "es": "✅ Ahora está `en servicio`."
+  },
+  "enServiceWithdrawed": {
+    "fr": "✅ Vous n'êtes plus `en service`.",
+    "en": "✅ You are no longer `on duty`.",
+    "es": "✅ Ya no estás `de servicio`."
   }
 }
