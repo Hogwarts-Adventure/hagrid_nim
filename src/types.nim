@@ -10,12 +10,13 @@ type
         ## Type rassemblant les variables nécessaires au fonctionnement du bot
         db*: DbConn ## connexion à la BDD
         checkHouseCooldown*: seq[string] ## cooldown pour checkUserHouseRole
-        lang*: Table[string, Table[string, string]] ## table des traductions [message, [langue, traduction]] 
+        lang*: Table[string, Table[string, string]] ## table des traductions [message, [langue, traduction]]
+        usedPrefix*: string ## prefix utilisé par le bot actuellement
         ##
         # Données du JSON
         token*: string ## token du bot
-        prefix*: string ## prefix de la version release
-        devPrefix*: string ## prefix de la version dev
+        prefix: string ## prefix de la version release
+        devPrefix: string ## prefix de la version dev
         guildId*: string ## ID du serveur principal (bot ne réagit qu'aux évènements de ce serveur)
         pgIpAdress*: string ## adresse IP PG distant
         pgUser*: string ## nom utilisateur PG
@@ -30,6 +31,10 @@ type
         ticketEmojiId*: string ## ID de la réaction du système de tickets
         premiumRoleId*: string ## ID du rôle Premium
         trafficChannelId*: string ## ID du salon des arrivées/départs
+        enServiceRoleId*: string ## ID du rôle "En Service"
+        enServiceMessageId*: string ## ID du message où réagir
+        enServiceReactionId*: string ## ID de la réaction à cliquer
+        enServiceAllowedRoles*: seq[string] ## ID des rôles autorisés à avoir le rôle
 
     House* = object
         ## Représente une maison dans la BDD
@@ -58,6 +63,9 @@ proc initHgConf(): HagridConfig =
         d.lang[field] = initTable[string, string]()
         for lang, text in value.fields:
             d.lang[field][lang] = text.str
+    
+    d.usedPrefix = if isDevVersion(): d.devPrefix else: d.prefix
+
     d.db = pg.open((if isDevVersion(): d.pgIpAdress else: "localhost"), d.pgUser, d.pgPass, d.pgDbName)
     return d
 

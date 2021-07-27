@@ -1,6 +1,6 @@
 import dimscord, asyncdispatch, options, strutils, tables
 from times import now, `$`
-from sequtils import concat, items
+from sequtils import concat, items, any
 import ./types
 
 proc onReady(s: Shard, r: Ready) {.event(discord).} =
@@ -21,6 +21,34 @@ proc messageCreate(s: Shard, m: Message) {.event(discord).} =
       await sleepAsync(5_000) # attends 20 secondes et le supprime
       hgConf.checkHouseCooldown.delete(hgConf.checkHouseCooldown.find(m.author.id))
     discard addAndDelete()
+
+  if not m.content.startsWith(hgConf.usedPrefix): return
+  
+  let
+    userDb = getUserFromDb(m.author.id)
+    args = m.content.substr(hgConf.usedPrefix.len).split(" ")
+
+  try:
+    case args[0]:
+    of "toggleservice", "ts":
+      if hgConf.enServiceAllowedRoles.any(proc (r: string): bool = r in m.member.get.roles):
+        if hgConf.enServiceRoleId in m.member.get.roles:
+          await discord.api.removeGuildMemberRole(hgConf.guildId, m.author.id, hgConf.enServiceRoleId)
+          discard discord.api.sendMessage(m.channel_id, userDb.getLang("enServiceWithdrawed"))
+        else:
+          await discord.api.addGuildMemberRole(hgConf.guildId, m.author.id, hgConf.enServiceRoleId)
+          discard discord.api.sendMessage(m.channel_id, userDb.getLang("enServiceGave"))
+      else:
+        discard discord.api.sendMessage(m.channel_id, userDb.getLang("enServiceNotAllowed"))
+    of "rereact":
+      # TODO: commande pour reréagir à tous les messages nécessaires
+      discard
+    else:
+      discard discord.api.sendMessage(m.channel_id,
+        userDb.getLang("unknownCommand").replace("{{cmd}}", args[0]))
+  except:
+    echo repr(getCurrentExceptionMsg())
+    discard discord.api.sendMessage(m.channel_id, userDb.getLang("errorOccured"))
 
 proc messageReactionAdd(s: Shard, m: Message,
   u: User, e: Emoji, exists: bool) {.event(discord).} =
@@ -61,7 +89,7 @@ proc messageReactionAdd(s: Shard, m: Message,
           perms)
       )
       discard discord.api.sendMessage(createdChannel.id,
-        content=getLang("afterTicketMention", "fr").replace("(uid)", u.id),
+        content=getLang("afterTicketMention", "fr").replace("{{uid}}", u.id),
         embed=some Embed(
           author: some EmbedAuthor(name: some $u, icon_url: some u.animatedAvatarUrl()),
           description: some userDb.getLang("ticketMessage")))
