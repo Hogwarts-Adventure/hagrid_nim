@@ -1,0 +1,28 @@
+{
+  "ticketMessage": {
+    "fr": "<a:gif_valide_blue:698543885495959593> • **Vous venez de créer un ticket avec succès !**\n\n**<a:alerte:750325638354960415> • Si vous avez créé ce ticket par erreur ne vous inquiétez pas, __vous ne serez pas sanctionné__ !**\n\n**<:staff:754236502913056791> • En dessous de ce message, dîtes-nous pourquoi vous avez créé ce ticket et le STAFF sera ravi de vous répondre !**",
+    "en": "<a:gif_valide_blue:698543885495959593> • **You have successfully created a ticket !**\n\n**<a:alerte:750325638354960415> • If you have created this ticket by mistake don't worry, __you won't be sanctioned__ !**\n\n**<:staff:754236502913056791> • Below this message, tell us why you created this ticket and STAFF will be happy to answer you !**",
+    "es": "<a:gif_valide_blue:698543885495959593> • **¡Acaba de crear con éxito un billete!**\n\n**<a:alerte:750325638354960415> • Si creaste este boleto por error no te preocupes, __¡no serás castigado!__**\n\n**<:staff:754236502913056791> • ¡Debajo de este mensaje, dinos por qué creaste este billete y el personal estará encantado de responderte !**"
+  },
+  "ticketError": {
+    "fr": "Une erreur est survenue en créant le ticket.",
+    "en": "An error occured while creating the ticket.",
+    "es": "Se ha producido un error al crear el ticket."
+  },
+  "ticketChannelAlreadyExists": {
+    "fr": "Vous possédez déjà un salon pour poser votre question.",
+    "en": "You already have a channel to ask your question.",
+    "es": "Ya tienes un canal para hacer tu pregunta."
+  },
+  "afterTicketMention": {
+    "fr": "<a:gif_annonce:707259263646695504> | <@(uid)>"
+  },
+  "welcomeMessage": {
+    "fr": "<a:Tada:786907164525592587> **| Bienvenue sur le serveur {{mention}} ! Je te laisse lire le <#698554156679692389> et <#738478512045817896>. Nous sommes désormais {{count}} !**",
+    "en": "<a:Tada:786907164525592587> **| Welcome {{mention}} ! I let you read <#698554156679692389> and <#738478512045817896>. Now, we are {{count}} !**",
+    "es": "<a:Tada:786907164525592587> **|  ¡Bienvenido al servidor! Te dejé leer las <#698554156679692389> y las <#738478512045817896>. Ya tenemos 12 años !**"
+  },
+  "byeMessage": {
+    "fr": "\uD83D\uDE26 **| {{username}} vient de partir du serveur.**"
+  }
+}
