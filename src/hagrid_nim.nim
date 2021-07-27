@@ -15,10 +15,12 @@ proc messageCreate(s: Shard, m: Message) {.event(discord).} =
   m.member.get.user = m.author
 
   if m.author.id notin hgConf.checkHouseCooldown:
-    checkUserHouseRole(m.member.get)
-    hgConf.checkHouseCooldown.add(m.author.id)
-    await sleepAsync(20_000)
-    hgConf.checkHouseCooldown.delete(hgConf.checkHouseCooldown.find(m.author.id))
+    proc addAndDelete() {.async.}=
+      checkUserHouseRole(m.member.get)
+      hgConf.checkHouseCooldown.add(m.author.id)
+      await sleepAsync(5_000) # attends 20 secondes et le supprime
+      hgConf.checkHouseCooldown.delete(hgConf.checkHouseCooldown.find(m.author.id))
+    discard addAndDelete()
 
 proc messageReactionAdd(s: Shard, m: Message,
   u: User, e: Emoji, exists: bool) {.event(discord).} =
@@ -27,11 +29,11 @@ proc messageReactionAdd(s: Shard, m: Message,
 
   let u = await discord.api.getUser(u.id)
 
-  if m.id == hgConf.introReactionId:
+  if m.id == hgConf.introMessageId:
     for r in hgConf.introReactionRoles:
       if r notin m.member.get.roles:
         discard discord.api.addGuildMemberRole(hgConf.guildId, u.id, r)
-  elif m.id == hgConf.ticketReactionId and e.id.get("") == hgConf.ticketEmojiId.split(":")[1]:
+  elif m.id == hgConf.ticketMessageId and e.id.get("") == hgConf.ticketEmojiId.split(":")[1]:
     defer: await discord.api.addMessageReaction(m.channel_id, m.id, hgConf.ticketEmojiId)
     defer: await discord.api.deleteAllMessageReactions(m.channel_id, m.id)
     let userDb = getUserFromDb(u.id)
