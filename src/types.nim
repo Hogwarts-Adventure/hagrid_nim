@@ -167,7 +167,7 @@ proc checkUserHouseRole*(member: Member)=
         
         if userDb.datePremium != 0.fromUnix: # premium
             if userDb.datePremium <= getTime(): # check si premium ou non
-                hgConf.db.exec(sql"""UPDATE users SET "datePremium" = '' WHERE id = ?""", userDb.id)
+                hgConf.db.exec(sql"""UPDATE users SET "datePremium" = '' WHERE id = ?; COMMIT;""", userDb.id)
                 if hgConf.premiumRoleId in member.roles: # Retire le rôle premium si il l'a
                     discard discord.api.removeGuildMemberRole(hgConf.guildId, member.user.id, hgConf.premiumRoleId)
             else:
