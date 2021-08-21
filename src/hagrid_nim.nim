@@ -1,6 +1,7 @@
 import dimscord, asyncdispatch, options, strutils, tables
 from times import now, `$`
 from sequtils import concat, items, any
+from sugar import `=>`
 import ./types
 
 proc onReady(s: Shard, r: Ready) {.event(discord).} =
@@ -18,20 +19,29 @@ proc messageCreate(s: Shard, m: Message) {.event(discord).} =
     proc addAndDelete() {.async.}=
       checkUserHouseRole(m.member.get)
       hgConf.checkHouseCooldown.add(m.author.id)
-      await sleepAsync(5_000) # attends 20 secondes et le supprime
+      await sleepAsync(20_000) # attends 20 secondes et le supprime
       hgConf.checkHouseCooldown.delete(hgConf.checkHouseCooldown.find(m.author.id))
     discard addAndDelete()
 
   if not m.content.startsWith(hgConf.usedPrefix): return
-  
+
   let
     userDb = getUserFromDb(m.author.id)
     args = m.content.substr(hgConf.usedPrefix.len).split(" ")
+    command = getCommandName(args[0])
+
+  if command == "":
+    discard discord.api.sendMessage(m.channel_id, userDb.getLang("unknownCommand").replace("{{cmd}}", args[0]))
+    return
+
+  if hgConf.cooldownCommands.hasKey(m.author.id) and command in hgConf.cooldownCommands[m.author.id]:
+    discard discord.api.sendMessage(m.channel_id, userDb.getLang("inCooldown"))
+    return
 
   try:
     case args[0]:
     of "toggleservice", "ts":
-      if hgConf.enServiceAllowedRoles.any(proc (r: string): bool = r in m.member.get.roles):
+      if hgConf.enServiceAllowedRoles.any(r => r in m.member.get.roles):
         if hgConf.enServiceRoleId in m.member.get.roles:
           await discord.api.removeGuildMemberRole(hgConf.guildId, m.author.id, hgConf.enServiceRoleId)
           discard discord.api.sendMessage(m.channel_id, userDb.getLang("enServiceWithdrawed"))
@@ -43,12 +53,11 @@ proc messageCreate(s: Shard, m: Message) {.event(discord).} =
     of "rereact":
       # TODO: commande pour reréagir à tous les messages nécessaires
       discard
-    else:
-      discard discord.api.sendMessage(m.channel_id,
-        userDb.getLang("unknownCommand").replace("{{cmd}}", args[0]))
   except:
     echo repr(getCurrentExceptionMsg())
     discard discord.api.sendMessage(m.channel_id, userDb.getLang("errorOccured"))
+
+  discard putInCooldown(userDb.id, command, 5_000)
 
 proc messageReactionAdd(s: Shard, m: Message,
   u: User, e: Emoji, exists: bool) {.event(discord).} =
@@ -58,9 +67,21 @@ proc messageReactionAdd(s: Shard, m: Message,
   let u = await discord.api.getUser(u.id)
 
   if m.id == hgConf.introMessageId:
+    if not hgConf.otherCooldowns.hasKey("intro"):
+      hgConf.otherCooldowns["intro"] = @[]
+    if u.id in hgConf.otherCooldowns["intro"]:
+      return
+    hgConf.otherCooldowns["intro"].add(u.id)
+  
+    defer: hgConf.otherCooldowns["intro"].delete(hgConf.otherCooldowns["intro"].find(u.id))
+    defer: await sleepAsync(20_000)
+
+    echo "Reaction firewall de: " & $u
     for r in hgConf.introReactionRoles:
       if r notin m.member.get.roles:
+        echo "\tAjout du role: " & r
         discard discord.api.addGuildMemberRole(hgConf.guildId, u.id, r)
+        await sleepAsync(1_000)
   elif m.id == hgConf.ticketMessageId and e.id.get("") == hgConf.ticketEmojiId.split(":")[1]:
     defer: await discord.api.addMessageReaction(m.channel_id, m.id, hgConf.ticketEmojiId)
     defer: await discord.api.deleteAllMessageReactions(m.channel_id, m.id)
@@ -88,10 +109,12 @@ proc messageReactionAdd(s: Shard, m: Message,
             Overwrite(id: hgConf.guildId, deny: {permViewChannel}, kind: "role")],
           perms)
       )
+      echo "Creation de ticket pour: " & $u
+      await sleepAsync(3_000)
       discard discord.api.sendMessage(createdChannel.id,
         content=getLang("afterTicketMention", "fr").replace("{{uid}}", u.id),
         embed=some Embed(
-          author: some EmbedAuthor(name: some $u, icon_url: some u.animatedAvatarUrl()),
+          author: some EmbedAuthor(name: some u.username, icon_url: some u.animatedAvatarUrl()),
           description: some userDb.getLang("ticketMessage")))
     except:
       let
@@ -108,7 +131,8 @@ proc guildMemberAdd(s: Shard, g: Guild, m: Member) {.event(discord).} =
   if g.id != hgConf.guildId: return
 
   let lang = getUserFromDb(m.user.id).lang
-  discard await discord.api.sendMessage(
+  echo "Un membre a rejoint: " & $m.user
+  discard discord.api.sendMessage(
     hgConf.trafficChannelId,
     getLang("welcomeMessage", lang)
       .multiReplace(("{{mention}}", m.user.mentionUser), ("{{count}}", $g.member_count.get(-1)))
@@ -117,10 +141,11 @@ proc guildMemberAdd(s: Shard, g: Guild, m: Member) {.event(discord).} =
 proc guildMemberRemove(s: Shard, g: Guild, m: Member) {.event(discord).} =
   if g.id != hgConf.guildId: return
 
-  discard await discord.api.sendMessage(
+  echo "Un membre a quitte: " & $m.user
+  discard discord.api.sendMessage(
     hgConf.trafficChannelId,
     getLang("byeMessage", "fr")
-      .replace("{{username}}", m.user.mentionUser & " `(" & m.user.username & ")`")
+      .replace("{{username}}", m.user.mentionUser & " `(" & $m.user & ")`")
   )
 
 # https://nim-lang.org/docs/asyncdispatch.html

@@ -30,6 +30,11 @@
     "en": "❌ Command `{{cmd}}` does not exist.",
     "es": "❌ El comando `{{cmd}}` no existe."
   },
+  "inCooldown": {
+    "fr": "❌ Les commandes ont un cooldown de 5 secondes.",
+    "en": "❌ The commands have a cooldown of 5 seconds.",
+    "es": "❌ Los comandos tienen un enfriamiento de 5 segundos."
+  },
   "enServiceNotAllowed": {
     "fr": "❌ Ce rôle est réservé à certains membres du staff.",
     "en": "❌ This role is reserved for certain staff members.",
