@@ -10,6 +10,8 @@ type
         ## Type rassemblant les variables nécessaires au fonctionnement du bot
         db*: DbConn ## connexion à la BDD
         checkHouseCooldown*: seq[string] ## cooldown pour checkUserHouseRole
+        cooldownCommands*: Table[string, seq[string]]
+        otherCooldowns*: Table[string, seq[string]]
         lang*: Table[string, Table[string, string]] ## table des traductions [message, [langue, traduction]]
         usedPrefix*: string ## prefix utilisé par le bot actuellement
         ##
@@ -184,3 +186,23 @@ proc animatedAvatarUrl*(user: User): string=
         result = user.avatarUrl("gif")
     else:
         result = user.avatarUrl()
+
+const CommandsAliases: Table[string, seq[string]] = {
+    "toggleservice": @["ts"]
+}.toTable
+
+proc getCommandName*(cmd: string): string=
+    if CommandsAliases.hasKey(cmd): return cmd
+    for command, aliases in CommandsAliases.pairs:
+        if cmd in aliases: return command
+    return ""
+
+proc putInCooldown*(userId, cmd: string, waitMs: int) {.async.}=
+    if hgConf.cooldownCommands.hasKey(userId):
+        hgConf.cooldownCommands[userId].add(cmd)
+    else:
+        hgConf.cooldownCommands[userId] = @[cmd]
+    await sleepAsync(waitMs)
+    hgConf.cooldownCommands[userId].delete(hgConf.cooldownCommands[userId].find(cmd))
+    if hgConf.cooldownCommands[userId].len == 0:
+        hgConf.cooldownCommands.del(userId)
