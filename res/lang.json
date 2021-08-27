@@ -45,6 +45,11 @@
     "en": "❌ An error occured.",
     "es": "❌ Se ha producido un error."
   },
+  "roleError": {
+    "fr": "❌ Une erreur est survenue. L'ID \"{id}\" ne correspond à aucun rôle.",
+    "en": "❌ An error occured. The ID \"{id}\" does not correspond to any role.",
+    "es": "❌ Se ha producido un error. El ID \"{id}\" no corresponde a ningún rol."
+  },
   "enServiceGave": {
     "fr": "✅ Vous êtes maintenant `en service`.",
     "en": "✅ You are now `on duty`.",

@@ -15,7 +15,7 @@ proc messageCreate(s: Shard, m: Message) {.event(discord).} =
 
   m.member.get.user = m.author
 
-  if m.author.id notin hgConf.checkHouseCooldown:
+  if m.author.id notin hgConf.checkHouseCooldown and not isDevVersion():
     proc addAndDelete() {.async.}=
       checkUserHouseRole(m.member.get)
       hgConf.checkHouseCooldown.add(m.author.id)
@@ -66,7 +66,7 @@ proc messageReactionAdd(s: Shard, m: Message,
 
   let u = await discord.api.getUser(u.id)
 
-  if m.id == hgConf.introMessageId:
+  if m.id == hgConf.introMessageId: # firewall
     if not hgConf.otherCooldowns.hasKey("intro"):
       hgConf.otherCooldowns["intro"] = @[]
     if u.id in hgConf.otherCooldowns["intro"]:
@@ -82,7 +82,7 @@ proc messageReactionAdd(s: Shard, m: Message,
         echo "\tAjout du role: " & r
         discard discord.api.addGuildMemberRole(hgConf.guildId, u.id, r)
         await sleepAsync(1_000)
-  elif m.id == hgConf.ticketMessageId and e.id.get("") == hgConf.ticketEmojiId.split(":")[1]:
+  elif m.id == hgConf.ticketMessageId and e.id.get("") == hgConf.ticketEmojiId.split(":")[1]: # tickets
     defer: await discord.api.addMessageReaction(m.channel_id, m.id, hgConf.ticketEmojiId)
     defer: await discord.api.deleteAllMessageReactions(m.channel_id, m.id)
     let userDb = getUserFromDb(u.id)
@@ -126,9 +126,37 @@ proc messageReactionAdd(s: Shard, m: Message,
       try:
         discard discord.api.deleteMessage(m.channelId, sended.id)
       except: discard
+  elif m.channel_id == hgConf.assignableRolesChannelId: # reaction roles
+    var roleId = hgConf.assignableRoles.getKeyByValue($e)
+    if roleId.isNone:
+      echo "Mauvais emoji dans le salon des roles assignables:"
+      echo "\t" & $u & " a reagi avec: \"" & e.id.get("") & "\""
+      return
+
+    let userDb = getUserFromDb(u.id)
+
+    if not getShard0().cache.guilds[hgConf.guildId].roles.hasKey(roleId.get):
+      echo "Le role avec l'ID \"" & roleId.get & "\" est introuvable"
+      discard discord.api.sendMessage(getDMChannel(u.id).id,
+        userDb.getLang("roleError").replace("{id}", roleId.get))
+      return
+    discard discord.api.addGuildMemberRole(hgConf.guildId, u.id, roleId.get)
+
+proc messageReactionRemove(s: Shard, m: Message,
+  u: User, r: Reaction, exists: bool) {.event(discord).} =
+  if m.guild_id.get("") != hgConf.guildId or u.bot:
+    return
+
+  let u = await discord.api.getUser(u.id)
+  if m.channel_id == hgConf.assignableRolesChannelId:
+    var roleId = hgConf.assignableRoles.getKeyByValue($r.emoji)
+    if roleId.isNone:
+      return
+
+    discard discord.api.removeGuildMemberRole(hgConf.guildId, u.id, roleId.get)
 
 proc guildMemberAdd(s: Shard, g: Guild, m: Member) {.event(discord).} =
-  if g.id != hgConf.guildId: return
+  if g.id != hgConf.guildId or isDevVersion(): return
 
   let lang = getUserFromDb(m.user.id).lang
   echo "Un membre a rejoint: " & $m.user
@@ -139,7 +167,7 @@ proc guildMemberAdd(s: Shard, g: Guild, m: Member) {.event(discord).} =
   )
 
 proc guildMemberRemove(s: Shard, g: Guild, m: Member) {.event(discord).} =
-  if g.id != hgConf.guildId: return
+  if g.id != hgConf.guildId or isDevVersion(): return
 
   echo "Un membre a quitte: " & $m.user
   discard discord.api.sendMessage(
@@ -152,5 +180,6 @@ proc guildMemberRemove(s: Shard, g: Guild, m: Member) {.event(discord).} =
 
 when isMainModule:
   waitFor discord.startSession(
-    gateway_intents = {giGuildMessages, giGuilds, giGuildMembers, giGuildMessageReactions}
+    gateway_intents = {giGuildMessages, giGuilds, giGuildMembers, giGuildMessageReactions},
+    guild_subscriptions = false
   )

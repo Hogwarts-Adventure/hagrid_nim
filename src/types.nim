@@ -14,6 +14,7 @@ type
         otherCooldowns*: Table[string, seq[string]]
         lang*: Table[string, Table[string, string]] ## table des traductions [message, [langue, traduction]]
         usedPrefix*: string ## prefix utilisé par le bot actuellement
+        assignableRoles*: Table[string, string] ## table des roles [emoji, roleId]
         ##
         # Données du JSON
         token*: string ## token du bot
@@ -37,6 +38,7 @@ type
         enServiceMessageId*: string ## ID du message où réagir
         enServiceReactionId*: string ## ID de la réaction à cliquer
         enServiceAllowedRoles*: seq[string] ## ID des rôles autorisés à avoir le rôle
+        assignableRolesChannelId*: string ## ID du salon des messages du reaction roles
 
     House* = object
         ## Représente une maison dans la BDD
@@ -65,6 +67,9 @@ proc initHgConf(): HagridConfig =
         d.lang[field] = initTable[string, string]()
         for lang, text in value.fields:
             d.lang[field][lang] = text.str
+
+    for emoji, roleId in parseJson(readFile("res/assignable_roles.json")).fields.pairs:
+        d.assignableRoles[emoji] = roleId.str
     
     d.usedPrefix = if isDevVersion(): d.devPrefix else: d.prefix
 
@@ -206,3 +211,14 @@ proc putInCooldown*(userId, cmd: string, waitMs: int) {.async.}=
     hgConf.cooldownCommands[userId].delete(hgConf.cooldownCommands[userId].find(cmd))
     if hgConf.cooldownCommands[userId].len == 0:
         hgConf.cooldownCommands.del(userId)
+
+proc getDMChannel*(userId: string): DMChannel=
+    if getShard0().cache.dmChannels.hasKey(userId):
+        return getShard0().cache.dmChannels[userId]
+    return waitFor discord.api.createUserDm(userId)
+
+proc getKeyByValue*[A, B](table: Table[A, B], search: B): Option[A]=
+    for k, v in table.pairs:
+        if v == search:
+            return some k
+    return none A
