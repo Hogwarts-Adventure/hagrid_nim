@@ -132,6 +132,8 @@ proc messageReactionAdd(s: Shard, m: Message,
       echo "Mauvais emoji dans le salon des roles assignables:"
       echo "\t" & $u & " a reagi avec: \"" & e.id.get("") & "\""
       return
+    elif m.member.isSome and roleId.get in m.member.get.roles:
+      return
 
     let userDb = getUserFromDb(u.id)
 
